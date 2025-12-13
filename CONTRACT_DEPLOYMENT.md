@@ -2,18 +2,18 @@
 
 ## 📝 Contract Overview
 
-Kontrak Winter Cheer NFT telah diupdate untuk mendukung minting dengan metadata URI yang langsung disimpan on-chain saat minting.
+Kontrak Winter Cheer NFT menggunakan **satu fungsi mint** yang langsung menerima metadata URI.
 
-### ✨ Update Terbaru:
-- **Function Baru**: `mintWithURI(address to, uint256 fid, string tokenURI)` 
+### ✨ Function Mint:
+- **Function**: `mint(address to, uint256 fid, string uri)` 
 - **Benefit**: Metadata URI langsung ter-set on-chain saat mint
-- **Backward Compatible**: Function `mint(address to, uint256 fid)` tetap ada
+- **Simple**: Hanya 1 fungsi mint, tidak ada duplikasi
 
 ---
 
 ## 🛠️ Solidity Contract Code
 
-Tambahkan function berikut ke smart contract Anda:
+Deploy smart contract berikut ke Base Network:
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -38,32 +38,16 @@ contract WinterCheerNFT is ERC721, ERC721URIStorage, Ownable {
     
     constructor() ERC721("Winter Cheer", "WCHEER") Ownable(msg.sender) {}
     
-    // Legacy mint function (without URI)
-    function mint(address to, uint256 fid) external payable {
-        require(msg.value >= MINT_FEE, "Insufficient mint fee");
-        require(totalMinted < MAX_SUPPLY, "Max supply reached");
-        require(farcasterIdToTokenId[fid] == 0, "FID already minted");
-        
-        totalMinted++;
-        uint256 tokenId = totalMinted;
-        
-        farcasterIdToTokenId[fid] = tokenId;
-        tokenIdToFarcasterId[tokenId] = fid;
-        
-        _safeMint(to, tokenId);
-        emit TokenMinted(to, tokenId, fid);
-    }
-    
-    // NEW: Mint with metadata URI
-    function mintWithURI(
+    // Main mint function with metadata URI
+    function mint(
         address to, 
         uint256 fid, 
-        string memory tokenURI
+        string memory uri
     ) external payable {
         require(msg.value >= MINT_FEE, "Insufficient mint fee");
         require(totalMinted < MAX_SUPPLY, "Max supply reached");
         require(farcasterIdToTokenId[fid] == 0, "FID already minted");
-        require(bytes(tokenURI).length > 0, "Token URI cannot be empty");
+        require(bytes(uri).length > 0, "Token URI cannot be empty");
         
         totalMinted++;
         uint256 tokenId = totalMinted;
@@ -72,10 +56,10 @@ contract WinterCheerNFT is ERC721, ERC721URIStorage, Ownable {
         tokenIdToFarcasterId[tokenId] = fid;
         
         _safeMint(to, tokenId);
-        _setTokenURI(tokenId, tokenURI);
+        _setTokenURI(tokenId, uri);
         
         emit TokenMinted(to, tokenId, fid);
-        emit MetadataUpdated(tokenId, tokenURI);
+        emit MetadataUpdated(tokenId, uri);
     }
     
     // Update token URI (only owner)
@@ -221,10 +205,10 @@ npx hardhat verify --network base YOUR_CONTRACT_ADDRESS
 
 Test mint dengan URI:
 ```javascript
-const tx = await contract.mintWithURI(
+const tx = await contract.mint(
   recipientAddress,
   farcasterFID,
-  "ipfs://QmYourMetadataHash",
+  "ipfs://QmYourMetadataHash",  // uri parameter
   { value: ethers.utils.parseEther("0.00001") }
 );
 
@@ -298,4 +282,4 @@ WHERE image_ipfs_uri IS NOT NULL;
 
 ## 🎉 Done!
 
-Contract Anda sekarang support minting dengan metadata URI yang langsung ter-set on-chain! NFT akan muncul di OpenSea dengan semua attributes yang benar. 🚀
+Contract Anda sekarang hanya punya **1 fungsi mint** yang langsung set metadata URI on-chain! NFT akan muncul di OpenSea dengan semua attributes yang benar. 🚀
